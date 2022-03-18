@@ -1,5 +1,7 @@
 #ifdef _WIN32
     #include <windows.h>
+#elif __GNUC__
+    #include <dlfcn.h>
 #endif
 
 #include <stdio.h>
@@ -10,6 +12,9 @@ typedef int (*PFN_GetInt)();
 
 int main(int argc, char** argv) {
 
+    PFN_GetInt get_int = 0;
+    PFN_GetSettingsJsonBlob get_settings_jsob_blob = 0;
+
 #ifdef _WIN32
     HMODULE settings_handle = LoadLibraryA(argv[1]);
     if (settings_handle == NULL) {
@@ -17,11 +22,17 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    PFN_GetInt get_int = (PFN_GetInt)GetProcAddress(settings_handle, "GetInt");
-    printf("GetInt: %d\n", get_int());
+    get_int = (PFN_GetInt)GetProcAddress(settings_handle, "GetInt");
 
-    PFN_GetSettingsJsonBlob get_settings_jsob_blob =
-        (PFN_GetSettingsJsonBlob)GetProcAddress(settings_handle, "GetSettingsJsonBlob");
+    get_settings_jsob_blob = (PFN_GetSettingsJsonBlob)GetProcAddress(settings_handle, "GetSettingsJsonBlob");
+
+#elif __GNUC__
+    void* settings_handle = dlopen(argv[1], RTLD_GLOBAL);
+    get_int = (PFN_GetInt)dlsym(settings_handle, "GetInt");
+    get_settings_jsob_blob = (PFN_GetSettingsJsonBlob)dlsym(settings_handle, "GetSettingsJsonBlob");
+#endif
+
+    printf("GetInt: %d\n", get_int());
 
     SettingsJsonBlob* json_blob = get_settings_jsob_blob();
     while (json_blob != 0) {
@@ -30,8 +41,13 @@ int main(int argc, char** argv) {
         json_blob = json_blob->next;
     }
 
+#ifdef _WIN32
     if (!FreeLibrary(settings_handle)) {
         printf("failed to free dll.");
+    }
+#elif __GNUC__
+    if (dlclose(settings_handle) != 0) {
+        printf("failed to close shared lib.");
     }
 #endif
 

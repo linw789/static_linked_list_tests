@@ -11,4 +11,8 @@ add_subdirectory(settings_dll)
 
 add_executable(App main.cpp)
 
+if (${CMAKE_SYSTEM_NAME} EQUAL "Linux")
+    target_link_libraries(App PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
 target_link_libraries(App PRIVATE SettingsLib)
