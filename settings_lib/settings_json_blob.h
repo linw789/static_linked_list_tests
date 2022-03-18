@@ -14,6 +14,10 @@ extern SettingsJsonBlob* g_settings_json_blob_last;
 struct SettingsJsonBlob {
     SettingsJsonBlob* next;
 
+    SettingsJsonBlob() {
+        LinkJsonBlob();
+    }
+
     void LinkJsonBlob() {
         this->next = 0;
         if (g_settings_json_blob_first == 0) {

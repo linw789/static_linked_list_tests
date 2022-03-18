@@ -5,7 +5,7 @@
 #endif
 
 #include <stdio.h>
-#include <settings_json_blob.h>
+#include "settings_lib/settings_json_blob.h"
 
 typedef SettingsJsonBlob* (*PFN_GetSettingsJsonBlob)();
 typedef int (*PFN_GetInt)();
@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
 #ifdef _WIN32
     HMODULE settings_handle = LoadLibraryA(argv[1]);
     if (settings_handle == NULL) {
-        printf("Failed to load DLL.");
+        printf("Failed to load DLL: %s\n.", argv[1]);
         return 1;
     }
 
@@ -27,18 +27,25 @@ int main(int argc, char** argv) {
     get_settings_jsob_blob = (PFN_GetSettingsJsonBlob)GetProcAddress(settings_handle, "GetSettingsJsonBlob");
 
 #elif __GNUC__
-    void* settings_handle = dlopen(argv[1], RTLD_GLOBAL);
+    void* settings_handle = dlopen(argv[1], RTLD_NOW);
+    if (settings_handle == 0) {
+        printf("Failed to load shared lib: %s. Because %s\n.", argv[1], dlerror());
+    }
     get_int = (PFN_GetInt)dlsym(settings_handle, "GetInt");
     get_settings_jsob_blob = (PFN_GetSettingsJsonBlob)dlsym(settings_handle, "GetSettingsJsonBlob");
 #endif
 
-    printf("GetInt: %d\n", get_int());
+    if (get_int != 0) {
+        printf("GetInt: %d\n", get_int());
+    }
 
-    SettingsJsonBlob* json_blob = get_settings_jsob_blob();
-    while (json_blob != 0) {
-        const char* blob = json_blob->GetJsonBlob();
-        printf("json blob: %s\n", blob);
-        json_blob = json_blob->next;
+    if (get_settings_jsob_blob != 0) {
+        SettingsJsonBlob* json_blob = get_settings_jsob_blob();
+        while (json_blob != 0) {
+            const char* blob = json_blob->GetJsonBlob();
+            printf("json blob: %s\n", blob);
+            json_blob = json_blob->next;
+        }
     }
 
 #ifdef _WIN32
