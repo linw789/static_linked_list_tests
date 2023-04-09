@@ -2,11 +2,14 @@
 
 #include <static_linked_list.h>
 #include <foo.h>
+#include <stddef.h>
 
 #ifdef _WIN32
     #define API_EXPORT extern "C" __declspec(dllexport)
 #elif __GNUC__
     #define API_EXPORT extern "C" __attribute__ ((visibility ("default")))
+#else
+#error "Unsupported platform"
 #endif
 
 int bar_beep(int r);

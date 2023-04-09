@@ -1,10 +1,12 @@
+#include <stdio.h>
+#include <errno.h>
+
 #ifdef _WIN32
     #include <windows.h>
 #elif __GNUC__
     #include <dlfcn.h>
+    #include <string.h>
 #endif
-
-#include <stdio.h>
 
 typedef void (*get_all_nodes_fn)(char* buf, size_t size);
 
@@ -17,26 +19,31 @@ int main(int argc, char** argv) {
 #ifdef _WIN32
     HMODULE bar_lib = LoadLibraryA(BAR_PATH);
     if (bar_lib == NULL) {
-        printf("Failed to load DLL: %s\n.", argv[1]);
+        printf("Failed to load DLL: %s\n.", BAR_PATH);
         return 1;
     }
 
     get_all_nodes = (get_all_nodes_fn)GetProcAddress(bar_lib, "get_all_nodes");
+    if (get_all_nodes == NULL) {
+        printf("Failed to function pointer 'get_all_nodes'.\n");
+        return 1;
+    }
 
 #elif __GNUC__
-    void* settings_handle = dlopen(argv[1], RTLD_NOW);
-    if (settings_handle == 0) {
-        printf("Failed to load shared lib: %s. Because %s\n.", argv[1], dlerror());
+    void* bar_lib = dlopen(BAR_PATH, RTLD_NOW);
+    if (bar_lib == 0) {
+        printf("Failed to load shared lib. Error: %s\n.", dlerror());
     }
-    get_int = (PFN_GetInt)dlsym(settings_handle, "GetInt");
-    get_settings_jsob_blob = (PFN_GetSettingsJsonBlob)dlsym(settings_handle, "GetSettingsJsonBlob");
+    get_all_nodes = (get_all_nodes_fn)dlsym(bar_lib, "get_all_nodes");
+    if (get_all_nodes == NULL) {
+        printf("Failed to function pointer 'get_all_nodes'. Error: %s\n.", dlerror());
+        return 1;
+    }
 #endif
 
-    if (get_all_nodes != 0) {
-        char buf[1024] = {};
-        get_all_nodes(buf, 1024);
-        printf("all nodes: \n%s", buf);
-    }
+    char buf[1024] = {};
+    get_all_nodes(buf, 1024);
+    printf("all nodes: \n%s", buf);
 
 #ifdef _WIN32
     if (!FreeLibrary(bar_lib)) {
