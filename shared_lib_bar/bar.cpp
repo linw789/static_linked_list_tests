@@ -1,4 +1,5 @@
 #include "bar.h"
+#include "foo.h"
 #include <string.h>
 
 #define ASSERT(cond) if (cond) {} else { *(int*)0 = 0; }
@@ -17,6 +18,11 @@ bar_node g_bar_node;
 
 void get_all_nodes(char* buf, size_t size)
 {
+    // Here we reference a symbol from foo.cpp, so foo_node should be imported
+    // in bar.dll. But we also want to find out if foo1_node will imported in
+    // bar.dll.
+    int rand = foo_compute_random(13);
+
     size_t buf_pos = 0;
     static_linked_list* node = g_first_node;
     while (node != nullptr)
@@ -29,6 +35,8 @@ void get_all_nodes(char* buf, size_t size)
         *(buf + buf_pos) = '\n';
         buf_pos += 1;
         ASSERT(buf_pos < size);
+
+        node = node->next;
     }
     *(buf + buf_pos) = '\0';
 }

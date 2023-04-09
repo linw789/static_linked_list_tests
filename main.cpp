@@ -10,10 +10,12 @@ typedef void (*get_all_nodes_fn)(char* buf, size_t size);
 
 int main(int argc, char** argv) {
 
+    printf("BAR_PATH: %s\n", BAR_PATH);
+
     get_all_nodes_fn get_all_nodes = nullptr;
 
 #ifdef _WIN32
-    HMODULE bar_lib = LoadLibraryA();
+    HMODULE bar_lib = LoadLibraryA(BAR_PATH);
     if (bar_lib == NULL) {
         printf("Failed to load DLL: %s\n.", argv[1]);
         return 1;
